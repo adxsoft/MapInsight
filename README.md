@@ -3,6 +3,18 @@
 ## Version History
 v1.0 First Version
 
+## Installation
+1. Open the User Directory in Freeplane (Tools/Open User directory)
+2. Open the scripts folder
+3. Save this script as 'MapInsight_V0_1.groovy' in the scripts folder
+4. Restart Freeplane
+
+To Use Script
+1. Select an existing node
+2. In Freeplane 'Tools' menu select 'Scripts'
+3. Choose the script 'MapInsight_V1_0'
+
+## Introduction
 MapInsight is a Freeplane script I have been experimenting with which provides a simple UI for walking around a map and optionally creating connectors 
 This script has been tested on Freeplane 1.3 and 1.5 on Windows and Mac.
 
@@ -78,14 +90,3 @@ Clicking on a connector will highlight the connector in BLUE in the list and BLU
 You can remove the connector by clicking the 'Remove Connector' button
 
 You can change the connectors middle label by clicking the 'Edit Label'
-## installation="""
-Installation
-1. Open the User Directory in Freeplane (Tools/Open User directory)
-2. Open the scripts folder
-3. Save this script as 'MapInsight_V0_1.groovy' in the scripts folder
-4. Restart Freeplane
-
-To Use Script
-1. Select an existing node
-2. In Freeplane 'Tools' menu select 'Scripts'
-3. Choose the script 'MapInsight_V1_0'
