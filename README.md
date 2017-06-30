@@ -15,7 +15,7 @@ Connection Manager shows all connectors in the map in a sortable table with edit
 Hopefully this script will run unchanged on newer versions of Freeplane.
 
 
-#1. WALKING AROUND NODES
+# 1. WALKING AROUND NODES
 This script creates a free standing resizable window that allows you to 'walk' around
 the nodes in a map and create/remove and label connections.
 
@@ -30,7 +30,7 @@ To see the Note and details of the currently selected node use the View Menu and
 
 To see recent nodes visited see the History menu item
 
-#2. FINDING ASSOCIATED NODES
+# 2. FINDING ASSOCIATED NODES
 
 The script shows a sortable list of any possible related nodes (candidate nodes) by using 'proper'
 words
@@ -58,7 +58,7 @@ the main and candidate node (eg 'london' in the example above).
 If you wish to automatically create a connector for ALL the candidates then
 press the "Connect All" button. You can reverse this by clicking the "Undo Connect ALL" button.
 
-#3. MANAGING CONNECTORS
+# 3. MANAGING CONNECTORS
 
 Shows all the connectors in a sortable list and allows you to remove them or change the label if required.
 
