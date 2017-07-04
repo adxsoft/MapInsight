@@ -131,6 +131,10 @@ Object.metaClass.selectNodeByID = {nodeID -> selectNodeByID(nodeID)}
 Object.metaClass.formatForSwingDisplay = {nodetype,text,note,details -> formatForSwingDisplay(nodetype,text,note,details)}
 Object.metaClass.removeHtmlTags = {text -> removeHtmlTags(text)}
 Object.metaClass.removeHtmlTags = {-> setAllConnectorsToDefaultColor()}
+Object.metaClass.hideAllConnectors = {-> hideAllConnectors()}
+Object.metaClass.unhideAllConnectors = {-> unhideAllConnectors()}
+Object.metaClass.formatNodeTextForCell = {->formatNodeTextForCell(nodetext)}
+Object.metaClass.removeAllConnectors = {->removeAllConnectors()}
 
 //-----------------------
 // == GLOBAL FUNCTION: == display text as Freeplane information message
@@ -269,7 +273,7 @@ def formatForSwingDisplay(nodetype,text,note,details) {
     msgtext+="<B><font color=\"blue\">Details:</font></B><HR>$details<BR>"
     msgtext+="""</body></HTML>"""
 
-    return msgtext
+    return msgtext.replace('\n\n','<BR>').replace('\n','<BR>')
 }
 
 
@@ -288,7 +292,7 @@ def wordwrap(text, width=80, prefix='') {
         }
         out += next + '\n'
     }
-    out
+    return out
 }
 
 //-----------------------
@@ -341,7 +345,35 @@ def setAllConnectorsToDefaultColor() {
     }
 }
 
+//-----------------------
+// == GLOBAL FUNCTION: == remove  All connectors in the current node and subnodes to default color (GRAY)
+def removeAllConnectors() {
+    // set all connectors to GRAY
+    node.findAll().each {
+        it.connectorsIn.each {
+            node.removeConnector(it)
+        }
+        it.connectorsOut.each {
+            node.removeConnector(it)
+        }
+    }
+}
 
+//-----------------------
+// == GLOBAL FUNCTION: == hide all connectors by setting color to WHITE
+def hideAllConnectors() {
+    // set all connectors to WHITE
+    node.findAll().each {
+        it.connectorsOut.each {
+            it.setColor(Color.WHITE)
+        }
+    }
+}
+
+// == GLOBAL FUNCTION: == unhide all connectors by setting color to default
+def unhideAllConnectors() {
+    setAllConnectorsToDefaultColor()
+}
 
 
 //-----------------------
@@ -354,10 +386,10 @@ def loadNodeData(node) {
     //
 
     // get parent node details
-    def nodeparent = 'root'
+    def nodeparenttext = 'root'
     def nodeparentID = null
     if (node.parent != null) {
-        nodeparent = node.parent.text
+        nodeparenttext = node.parent.text
         nodeparentID = node.parent.nodeID
     }
 
@@ -365,12 +397,12 @@ def loadNodeData(node) {
     nodes_data = []
 
     // add parent node info of selected node to working array
-    nodes_data.add([id: nodeparentID, type: 'parent', nodetext: formatNodeTextForCell(nodeparent), label: 'parent', notetext: node.noteText, details: node.detailsText])
+    nodes_data.add([id: nodeparentID, type: 'parent', nodetext: nodeparenttext, label: 'parent', notetext: node.noteText, details: node.detailsText])
 
     // add child node(s) info of selected node to working array
     if (node.children) {
         node.children.each {
-            nodes_data.add([id: it.nodeID, type: 'child', nodetext: formatNodeTextForCell(it.text), label: 'child', notetext: it.noteText, details: it.detailsText])
+            nodes_data.add([id: it.nodeID, type: 'child', nodetext: it.text, label: 'child', notetext: it.noteText, details: it.detailsText])
         }
     }
 
@@ -383,7 +415,7 @@ def loadNodeData(node) {
                     middleLabel = it.middleLabel
                 }
                 sourceNode = getNodeByID(it.delegate.targetID)
-                nodes_data.add([id: it.source.nodeID, type: 'conn-IN', nodetext: formatNodeTextForCell(it.source.text), label: middleLabel, notetext: sourceNode.noteText, details: sourceNode.detailsText])
+                nodes_data.add([id: it.source.nodeID, type: 'conn-IN', nodetext: it.source.text, label: middleLabel, notetext: sourceNode.noteText, details: sourceNode.detailsText])
             }
         }
     }
@@ -398,7 +430,7 @@ def loadNodeData(node) {
                 }
                 targetNode = getNodeByID(it.delegate.targetID)
                 targetnoteText = targetNode.noteText.toString()
-                nodes_data.add([id: it.target.nodeID, type: 'conn-OUT', nodetext: formatNodeTextForCell(it.target.text), label: middleLabel, notetext: targetnoteText, details: targetNode.detailsText])
+                nodes_data.add([id: it.target.nodeID, type: 'conn-OUT', nodetext: it.target.text, label: middleLabel, notetext: targetnoteText, details: targetNode.detailsText])
             }
         }
     }
@@ -418,7 +450,7 @@ def nodeIDNotInCurrentTables(nodeID) {
 //-----------------------
 // == GLOBAL FUNCTION: == Update the user interface (UI) tables from the working array for the selected node
 def updateUI (newNode) {
-    selected_node_button.text=newNode.text
+    selected_node_button.text=formatNodeTextForCell(newNode.text)
     selected_node_button.setToolTipText(formatSelectedNodeButtonToolTipText(newNode))
     frame.title="$scriptVersion"
     connectorsInTable.model = swing.tableModel(list: nodes_data.findAll{it.type=="conn-IN"}) {
@@ -472,18 +504,18 @@ class MainTableCellRenderer extends JLabel implements TableCellRenderer {
         //*********************************************
         // set the text for the cell
         //*********************************************
-
-        setText(removeHtmlTags(value.toString()))
+        //def displaytext=formatNodeTextForCell(value.toString())
+        setText(value.toString())
 
 
         // set the cell to text and connector label (if row is showing a connector OUT)
         if (table.model.getValueAt(rowIndex,0)=='conn-OUT') {
-            setText(removeHtmlTags(value.toString() + ' (' + table.model.getValueAt(rowIndex, 4)) + ')')
+            setText('(' + table.model.getValueAt(rowIndex, 4) + ') '+removeHtmlTags(value.toString()))
         }
 
         // set the cell to text and connector label (if row is showing a connector IN)
         if (table.model.getValueAt(rowIndex,0)=='conn-IN') {
-            setText('(' + table.model.getValueAt(rowIndex, 4) + ') '+removeHtmlTags(value.toString()))
+            setText(removeHtmlTags(value.toString() + ' (' + table.model.getValueAt(rowIndex, 4)) + ')')
         }
 
         // center the text in the cell
@@ -663,7 +695,7 @@ Color tablebg = new Color(224,224,224)
 swing = new SwingBuilder()
 
 // define the main ui window(frame)
-frame = swing.frame(title: "$scriptVersion", defaultCloseOperation: JFrame.DISPOSE_ON_CLOSE, alwaysOnTop: true) {
+frame = swing.frame(title: "$scriptVersion", defaultCloseOperation: JFrame.DISPOSE_ON_CLOSE, alwaysOnTop: true,minimumSize: new Dimension(400,25)) {
     // main panel
     mypanel = panel (background: tablebg) {
         gridLayout()
@@ -672,7 +704,7 @@ frame = swing.frame(title: "$scriptVersion", defaultCloseOperation: JFrame.DISPO
             // Menu panel
             panel(background: tablebg) {
                 gridLayout()
-                mainmenu=menuBar() {
+                mainmenu=menuBar(minimumSize: new Dimension(400,25),maximumSize: new Dimension(400,25)) {
                     menu(text:'Actions') {
                         menuItem() {
                             action(
@@ -714,32 +746,34 @@ frame = swing.frame(title: "$scriptVersion", defaultCloseOperation: JFrame.DISPO
                                     })
                         }
                         separator()
-                        menuItem() {
-                            action(name:"Connector Candidates",
-                                    closure:{
-                                        connectoroptions()
-                                    })
-                        }
-                        separator()
-                        menuItem() {
-                            action(name:"Connectors Manager",
-                                    closure:{
-                                        connectorManagerUI()
-                                    })
-                        }
-                        separator()
-                        menuItem() {
-                            action(name:"Cut All Connectors",
-                                    closure:{
-                                        cutAllConnectors()
-                                    })
-                        }
-                        separator()
-                        menuItem() {
-                            action(name:"Paste All Connectors",
-                                    closure:{
-                                        pasteAllConnectors()
-                                    })
+                        menu(text:'Connectors') {
+                            menuItem() {
+                                action(name:"Connector Candidates",
+                                        closure:{
+                                            connectoroptions()
+                                        })
+                            }
+                            separator()
+                            menuItem() {
+                                action(name: "Connectors Manager",
+                                        closure: {
+                                            connectorManagerUI()
+                                        })
+                            }
+                            separator()
+                            menuItem() {
+                                action(name: "Hide All Connectors",
+                                        closure: {
+                                            hideAllConnectors()
+                                        })
+                            }
+                            separator()
+                            menuItem() {
+                                action(name: "UnHide All Connectors",
+                                        closure: {
+                                            unhideAllConnectors()
+                                        })
+                            }
                         }
                     }
                     menu(text:'History') {
@@ -852,7 +886,6 @@ frame = swing.frame(title: "$scriptVersion", defaultCloseOperation: JFrame.DISPO
                 }
             }
 
-//            label(text: '  ') // spacer
 
             // main central container has five areas arranged vertically
             // that show the relationships of the selected node
@@ -911,7 +944,7 @@ frame = swing.frame(title: "$scriptVersion", defaultCloseOperation: JFrame.DISPO
                                         contentAreaFilled: false,
                                         opaque: true
                                 ) {
-                                    action(name: newNode.text) {
+                                    action(name: formatNodeTextForCell(newNode.text)) {
                                         selectNodeByID(newNode.nodeID)
                                     }
                                 }
@@ -1237,30 +1270,27 @@ def connectorUI(newNode) {
         connectorpanel = panel(background: Color.WHITE) {
             gridLayout()
             vbox {
-                scrollPane {
+                connectorContainer = vbox {
 
-                    connectorContainer = vbox {
-
-                        // Possible connection candidate node details in table (note using customised table renderer ConnectorCandidateTableCellRenderer)
-                        vbox {
-                            panel() {
-                                label(text: "Possible Connections", foreground: Color.GRAY)
-                            }
-                            panel() {
-                                borderLayout()
-                                vbox {
-                                    scrollPane {
-                                        connectionCandidatesTable = table(background: Color.WHITE, showGrid: false, gridColor: Color.GRAY, autoCreateRowSorter: true) {
-                                            editing: true;
-                                            model = tableModel(list: connection_candidates_nodes_data) {
+                    // Possible connection candidate node details in table (note using customised table renderer ConnectorCandidateTableCellRenderer)
+                    vbox {
+                        panel() {
+                            label(text: "Possible Connections", foreground: Color.GRAY)
+                        }
+                        panel() {
+                            borderLayout()
+                            vbox {
+                                scrollPane {
+                                    connectionCandidatesTable = table(background: Color.WHITE, showGrid: false, gridColor: Color.GRAY, autoCreateRowSorter: true) {
+                                        editing: true;
+                                        model = tableModel(list: connection_candidates_nodes_data) {
 //                                            propertyColumn(header: 'ID', propertyName: 'id', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer(), minWidth: 50);
-                                                propertyColumn(header: 'Word', propertyName: 'properword', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer(), minWidth: 50);
-                                                propertyColumn(header: 'Type', propertyName: 'type', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer());
-                                                propertyColumn(header: 'Node', propertyName: 'nodetext', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer(), minWidth: 250);
-                                                propertyColumn(header: 'Note', propertyName: 'notetext', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer());
-                                                propertyColumn(header: 'Details', propertyName: 'details', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer());
-                                                propertyColumn(header: 'Parent', propertyName: 'parent', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer());
-                                            }
+                                            propertyColumn(header: 'Word', propertyName: 'properword', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer(), minWidth: 50);
+                                            propertyColumn(header: 'Type', propertyName: 'type', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer());
+                                            propertyColumn(header: 'Node', propertyName: 'nodetext', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer(), minWidth: 250);
+                                            propertyColumn(header: 'Note', propertyName: 'notetext', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer());
+                                            propertyColumn(header: 'Details', propertyName: 'details', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer());
+                                            propertyColumn(header: 'Parent', propertyName: 'parent', editable: false, cellRenderer: new ConnectorCandidateTableCellRenderer());
                                         }
                                     }
                                 }
@@ -1268,66 +1298,65 @@ def connectorUI(newNode) {
                         }
                     }
                 }
-                vbox {
-                    panel() {
-                        panel(alignmentX: 0f) {
-                            flowLayout(alignment: FlowLayout.RIGHT)
-                            button(action: action(name: 'Connect ALL', defaultButton: true, toolTipText: "Blah Blah",
-                                    closure: {
-                                        // Make connectors for ALL the suggested candidates and
-                                        // use the linking word as the connector label
+            vbox {
+                    hbox {
+                        button(action: action(name: 'Locate', defaultButton: true,
+                                closure: {
+                                    // locate the selected candidate node and go to it in the map
+                                    // but do not load it into Map Walker
+                                    if (selectedCandidateNode != null) {
+                                        c.find {
+                                            it.text == selectedCandidateNode.text
+                                        }.each {
+                                            selectNodeByTitle(it.text)
+                                            updateRecentNodesVisited(it.text)
+                                        }
+                                    }
+                                }))
+                        button(action: action(name: 'Go To', defaultButton: true,
+                                closure: {
+                                    // locate the selected candidate node and go to it in the map
+                                    // and also load it into Map Walkers array
+                                    if (selectedCandidateNode != null) {
+                                        c.find {
+                                            it.text == selectedCandidateNode.text
+                                        }.each {
+                                            selectNodeByTitle(it.text)
+                                            newNode = c.selected
+                                            loadNodeData(newNode)
+                                            updateUI(newNode)
+                                            selectedCandidateNode = null
+                                            connectionCandidatesDisplayed = false
+                                            connectorcandidatesframe.dispose()
+                                        }
+                                    }
+                                }))
+                        button(action: action(name: 'Close', closure: {
+                            connectionCandidatesDisplayed = false
+                            connectorcandidatesframe.dispose()
+                        }))
+                    }
+                    hbox {
+                        button(action: action(name: 'Connect ALL', defaultButton: true,
+                                closure: {
+                                    // Make connectors for ALL the suggested candidates and
+                                    // use the linking word as the connector label
 
-                                        // get current node selected
-                                        def sourcenode=newNode
+                                    // get current node selected
+                                    def sourcenode = newNode
 
-                                        // for each suggested candidate add a connector
-                                        connection_candidates_nodes_data.findAll().each {
-                                            def newconnector = sourcenode.addConnectorTo(getNodeByID(it['id']))
-                                            newconnector.setMiddleLabel(it['properword'].toLowerCase())
-                                            newconnector.setStartArrow(false)
-                                            newconnector.setEndArrow(true)
-                                        }
-                                    }))
-                            button(action: action(name: 'Undo "Connect ALL"', defaultButton: true, toolTipText: "Blah Blah",
-                                    closure: {
-                                        c.undo()
-                                    }))
-                            button(action: action(name: 'Locate', defaultButton: true,
-                                    closure: {
-                                        // locate the selected candidate node and go to it in the map
-                                        // but do not load it into Map Insight
-                                        if (selectedCandidateNode != null) {
-                                            c.find {
-                                                it.text == selectedCandidateNode.text
-                                            }.each {
-                                                selectNodeByTitle(it.text)
-                                                updateRecentNodesVisited(it.text)
-                                            }
-                                        }
-                                    }))
-                            button(action: action(name: 'Go To', defaultButton: true,
-                                    closure: {
-                                        // locate the selected candidate node and go to it in the map
-                                        // and also load it into Map Insights array
-                                        if (selectedCandidateNode != null) {
-                                            c.find {
-                                                it.text == selectedCandidateNode.text
-                                            }.each {
-                                                selectNodeByTitle(it.text)
-                                                newNode = c.selected
-                                                loadNodeData(newNode)
-                                                updateUI(newNode)
-                                                selectedCandidateNode = null
-                                                connectionCandidatesDisplayed = false
-                                                connectorcandidatesframe.dispose()
-                                            }
-                                        }
-                                    }))
-                            button(action: action(name: 'Close', closure: {
-                                connectionCandidatesDisplayed = false
-                                connectorcandidatesframe.dispose()
-                            }))
-                        }
+                                    // for each suggested candidate add a connector
+                                    connection_candidates_nodes_data.findAll().each {
+                                        def newconnector = sourcenode.addConnectorTo(getNodeByID(it['id']))
+                                        newconnector.setMiddleLabel(it['properword'].toLowerCase())
+                                        newconnector.setStartArrow(false)
+                                        newconnector.setEndArrow(true)
+                                    }
+                                }))
+                        button(action: action(name: 'Undo "Connect ALL"', defaultButton: true,
+                                closure: {
+                                    c.undo()
+                                }))
                     }
                 }
             }
@@ -1390,18 +1419,23 @@ def connectorUI(newNode) {
                                 minimumSize: [300,50],
                                 modal:true,
                                 alwaysOnTop: true,
-                                location: [globalscope.mypanel.getAt('width')+5,globalscope.mypanel.getAt('height')+5],
-                                owner:globalscope.ui.frame,
+                                owner:globalscope.connectorcandidatesframe,
                                 defaultCloseOperation:JFrame.DO_NOTHING_ON_CLOSE,
                                 //                    Using DO_NOTHING_ON_CLOSE so the Close button has full control
                                 //                    and it can ensure only one instance of the dialog appears
                                 pack:true,
                                 show:true) {
                             panel() {
+                                boxLayout(axis: BoxLayout.Y_AXIS)
                                 vbox {
-                                    vbox {
-                                        label(text: "Create connector from\n\n\"$sourcenode.text\"\n\nto\n\n\"$targetnode.text\"")
-                                        label(text: "connector middle label)")
+                                    panel() {
+                                        gridLayout(columns: 1, rows: 8)
+                                        label(text: 'Create connector from',horizontalAlignment: JLabel.CENTER)
+                                        label(text: "$sourcenode.text",horizontalAlignment: JLabel.CENTER,foreground: Color.BLUE)
+                                        label(text: "to",horizontalAlignment: JLabel.CENTER)
+                                        label(text: "$targetnode.text",horizontalAlignment: JLabel.CENTER,foreground: Color.BLUE)
+                                        separator()
+                                        label(text: "Enter new connector middle label ",horizontalAlignment: JLabel.CENTER)
                                         def input = textField(columns: 20, text: targetnodedata['properword'].toLowerCase())
                                         input.addFocusListener(
                                                 [focusGained: {},
@@ -1673,117 +1707,126 @@ def connectorManagerUI() {
                         panel() {
                             panel(alignmentX: 0f) {
                                 flowLayout(alignment: FlowLayout.RIGHT)
-                                editconnectorbutton=button(action: action(name: 'Edit Label', defaultButton: true, enabled:false,
-                                        closure: {
-                                            def sourcenode=getNodeByID(selectedconnectorobject.delegate.source.id)
-                                            def targetnode=getNodeByID(selectedconnectorobject.delegate.targetID)
+                                vbox {
+                                    hbox {
+                                        editconnectorbutton = button(action: action(name: 'Edit Label', defaultButton: true, enabled: false,
+                                                closure: {
+                                                    def sourcenode = getNodeByID(selectedconnectorobject.delegate.source.id)
+                                                    def targetnode = getNodeByID(selectedconnectorobject.delegate.targetID)
 
 
-                                            def sourcenodetext=sourcenode.text
-                                            def targetnodetext=targetnode.text
-                                            def middlelabel=selectedconnectorobject.delegate.middleLabel
+                                                    def sourcenodetext = sourcenode.text
+                                                    def targetnodetext = targetnode.text
+                                                    def middlelabel = selectedconnectorobject.delegate.middleLabel
 
-                                            editlabeldialog = swing.dialog(
-                                                    title: "Change Connector Label",
-                                                    defaultCloseOperation: JFrame.DISPOSE_ON_CLOSE,
-                                                    alwaysOnTop: true,
-                                                    modal: false,
-                                                    location: [mypanel.getAt('width')+connectorspanel.getAt('width')+5,0]
-                                            )
-                                            def panel = swing.panel{
-                                                vbox{
-                                                    label(text: "Enter new connector label")
-                                                    input = textField(columns:20,text: middlelabel)
-                                                }
-                                                hbox{
-                                                    button(action: action(name: 'OK', closure: {
-
-                                                        if (input.text!="") {
-                                                            selectedconnectorobject.delegate.middleLabel=input.text
-                                                            selectedconnectorobject.setColor(Color.GRAY)
-                                                        }
-
-                                                        editlabeldialog.dispose()
-                                                        connectorsframe.dispose()
-                                                    }))
-                                                    button(action: action(name: 'Cancel', closure: {
-                                                        editlabeldialog.dispose()
-                                                    }))
-                                                }
-                                            }
-                                            editlabeldialog.getContentPane().add(panel)
-                                            editlabeldialog.pack()
-                                            editlabeldialog.show()
-                                        }))
-                                removeconnectorbutton=button(action: action(name: 'Remove Connector', defaultButton: true, enabled:false,
-                                        closure: {
-                                            // Remove connector UI dialog
-
-
-                                            def sourcenode=getNodeByID(selectedconnectorobject.delegate.source.id)
-                                            def targetnode=getNodeByID(selectedconnectorobject.delegate.targetID)
-
-
-                                            def sourcenodetext=sourcenode.text
-                                            def targetnodetext=targetnode.text
-                                            def middlelabel=selectedconnectorobject.delegate.middleLabel
-
-//                                            def swing = new SwingBuilder()
-                                            removeconnectordialog = swing.dialog(title:'Remove Connector',
-                                                    id:'removeConnectorDialog',
-                                                    minimumSize: [100,50],
-                                                    modal:false,
-                                                    alwaysOnTop: true,
-                                                    location: [mypanel.getAt('width')+connectorspanel.getAt('width')+5,0],
-                                                    owner: ui.frame,
-                                                    defaultCloseOperation:JFrame.DO_NOTHING_ON_CLOSE,
-                                                    //                    Using DO_NOTHING_ON_CLOSE so the Close button has full control
-                                                    //                    and it can ensure only one instance of the dialog appears
-                                                    pack:true,
-                                                    show:true) {
-                                                panel() {
-                                                    boxLayout(axis: BoxLayout.Y_AXIS)
-                                                    panel() {
-                                                        flowLayout(alignment: FlowLayout.LEFT)
+                                                    editlabeldialog = swing.dialog(
+                                                            title: "Change Connector Label",
+                                                            defaultCloseOperation: JFrame.DISPOSE_ON_CLOSE,
+                                                            alwaysOnTop: true,
+                                                            modal: false,
+                                                            location: [mypanel.getAt('width') + connectorspanel.getAt('width') + 5, 0]
+                                                    )
+                                                    def panel = swing.panel {
                                                         vbox {
-                                                            label(text: "Remove this connector?")
-                                                            separator()
-                                                            label(text: "  from:  $sourcenodetext")
-                                                            label(text: "                 v")
-                                                            label(text: "  label:  $middlelabel")
-                                                            label(text: "                 v")
-                                                            label(text: "     to:  $targetnodetext")
-                                                            separator()
+                                                            label(text: "Enter new connector label")
+                                                            input = textField(columns: 20, text: middlelabel)
                                                         }
-                                                    }
-                                                    panel() {
                                                         hbox {
-                                                            button(action: action(name: 'Remove Connector', closure: {
-                                                                //locate connectorOut within the node
-                                                                sourcenode.connectorsOut.each {
-                                                                    def targetNode = getNodeByID(it.delegate.target.id)
-                                                                    if (targetNode.text.equals(targetnodetext) &&
-                                                                            sourcenode.text.equals(sourcenodetext) &&
-                                                                            middlelabel.equals(it.delegate.middleLabel)) {
-                                                                        sourcenode.removeConnector(it)
-                                                                    }
+                                                            button(action: action(name: 'OK', closure: {
+
+                                                                if (input.text != "") {
+                                                                    selectedconnectorobject.delegate.middleLabel = input.text
+                                                                    selectedconnectorobject.setColor(Color.GRAY)
                                                                 }
-                                                                removeconnectordialog.dispose()
+
+                                                                editlabeldialog.dispose()
                                                                 connectorsframe.dispose()
                                                             }))
                                                             button(action: action(name: 'Cancel', closure: {
-                                                                removeconnectordialog.dispose()
+                                                                editlabeldialog.dispose()
                                                             }))
                                                         }
                                                     }
-                                                }
-                                            }
+                                                    editlabeldialog.getContentPane().add(panel)
+                                                    editlabeldialog.pack()
+                                                    editlabeldialog.show()
+                                                }))
+                                        removeconnectorbutton = button(action: action(name: 'Remove Connector', defaultButton: true, enabled: false,
+                                                closure: {
+                                                    // Remove connector UI dialog
 
+
+                                                    def sourcenode = getNodeByID(selectedconnectorobject.delegate.source.id)
+                                                    def targetnode = getNodeByID(selectedconnectorobject.delegate.targetID)
+
+
+                                                    def sourcenodetext = sourcenode.text
+                                                    def targetnodetext = targetnode.text
+                                                    def middlelabel = selectedconnectorobject.delegate.middleLabel
+
+    //                                            def swing = new SwingBuilder()
+                                                    removeconnectordialog = swing.dialog(title: 'Remove Connector',
+                                                            id: 'removeConnectorDialog',
+                                                            minimumSize: [100, 50],
+                                                            modal: false,
+                                                            alwaysOnTop: true,
+                                                            defaultCloseOperation: JFrame.DO_NOTHING_ON_CLOSE,
+                                                            //                    Using DO_NOTHING_ON_CLOSE so the Close button has full control
+                                                            //                    and it can ensure only one instance of the dialog appears
+                                                            pack: true,
+                                                            show: true) {
+                                                        panel() {
+                                                            boxLayout(axis: BoxLayout.Y_AXIS)
+                                                            panel() {
+                                                                gridLayout(columns: 1, rows: 8)
+                                                                label(text: 'Remove this connector?', horizontalAlignment: JLabel.CENTER)
+                                                                label(text: "")
+                                                                label(text: "from: $sourcenodetext", horizontalAlignment: JLabel.CENTER, foreground: Color.BLUE)
+                                                                label(text: "")
+                                                                label(text: "label: $middlelabel", horizontalAlignment: JLabel.CENTER)
+                                                                label(text: "")
+                                                                label(text: "to: $targetnodetext", horizontalAlignment: JLabel.CENTER, foreground: Color.BLUE)
+                                                            }
+                                                            panel() {
+                                                                hbox {
+                                                                    button(action: action(name: 'Remove Connector', closure: {
+                                                                        //locate connectorOut within the node
+                                                                        sourcenode.connectorsOut.each {
+                                                                            def targetNode = getNodeByID(it.delegate.target.id)
+                                                                            if (targetNode.text.equals(targetnodetext) &&
+                                                                                    sourcenode.text.equals(sourcenodetext) &&
+                                                                                    middlelabel.equals(it.delegate.middleLabel)) {
+                                                                                sourcenode.removeConnector(it)
+                                                                            }
+                                                                        }
+                                                                        removeconnectordialog.dispose()
+                                                                        connectorsframe.dispose()
+                                                                    }))
+                                                                    button(action: action(name: 'Cancel', closure: {
+                                                                        removeconnectordialog.dispose()
+                                                                    }))
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                }))
+                                        button(action: action(name: 'Close', closure: {
+                                            connectorsDisplayed = false
+                                            connectorsframe.dispose()
                                         }))
-                                button(action: action(name: 'Close', closure: {
-                                    connectorsDisplayed = false
-                                    connectorsframe.dispose()
-                                }))
+                                    }
+                                    hbox {
+                                        button(action: action(name: 'Remove ALL Connectors', defaultButton: true,
+                                                closure: {
+                                                    removeAllConnectors()
+                                                }))
+                                        button(action: action(name: 'Undo "Remove ALL Connectors"', defaultButton: true,
+                                                closure: {
+                                                    c.undo()
+                                                }))
+                                    }
+                                }
                             }
                         }
                     }
@@ -1833,7 +1876,7 @@ def connectorManagerUI() {
                                     middlelabel.equals(it.delegate.middleLabel)) {
                                 setAllConnectorsToDefaultColor()
 
-                                // highlight the selected connector in the map to BLUEto BLUE
+                                // highlight the selected connector in the map to BLUE
                                 it.setColor(Color.BLUE)
 
                                 // save the reference to the connector object
