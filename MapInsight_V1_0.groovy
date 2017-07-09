@@ -322,12 +322,16 @@ def formatNodeTextForCell(nodetext) {
 // == GLOBAL FUNCTION: == clean up a word for comparisons
 def cleanupWord(word) {
     cleanword=word.toLowerCase()
+            .replace('.','') // remove full stops
             .replace(',','') // remove commas
             .replace('!','') // remove exclamation marks
             .replace("'s",'') // remove plurals
             .trim()          // remove leading and trailing blanks
-    if (cleanword.endsWith('s')) { // remove pluralfrom words ending in s and NOT ss
+    if (cleanword.endsWith('s')) { // remove plural from words ending in s and NOT ss
         if (!cleanword.endsWith('ss')) {
+            cleanword=cleanword.substring(0,cleanword.length()-1)
+        }
+        if (cleanword.endsWith('&')) {
             cleanword=cleanword.substring(0,cleanword.length()-1)
         }
     }
@@ -338,7 +342,7 @@ def cleanupWord(word) {
 // == GLOBAL FUNCTION: == set all connectors in the current node and subnodes to default color (GRAY)
 def setAllConnectorsToDefaultColor() {
     // set all connectors to GRAY
-    node.findAll().each {
+    node.map.root.findAll().each {
         it.connectorsOut.each {
             it.setColor(Color.GRAY)
         }
@@ -349,7 +353,7 @@ def setAllConnectorsToDefaultColor() {
 // == GLOBAL FUNCTION: == remove  All connectors in the current node and subnodes to default color (GRAY)
 def removeAllConnectors() {
     // set all connectors to GRAY
-    node.findAll().each {
+    node.map.root.findAll().each {
         it.connectorsIn.each {
             node.removeConnector(it)
         }
@@ -363,7 +367,7 @@ def removeAllConnectors() {
 // == GLOBAL FUNCTION: == hide all connectors by setting color to WHITE
 def hideAllConnectors() {
     // set all connectors to WHITE
-    node.findAll().each {
+    node.map.root.findAll().each {
         it.connectorsOut.each {
             it.setColor(Color.WHITE)
         }
@@ -1097,19 +1101,18 @@ def connectorUI(newNode) {
     }
 
     if (useSourceNodeCoreText) {
-        searchwords+=" "+newNode.text
+        searchwords+=" "+removeHtmlTags(newNode.text)
     }
 
     if (useSourceNodeNoteText) {
-        searchwords+=" "+newNode.noteText
+        searchwords+=" "+removeHtmlTags(newNode.noteText)
     }
 
     if (useSourceNodeDetailsText) {
-        searchwords+=" "+newNode.detailsText
+        searchwords+=" "+removeHtmlTags(newNode.detailsText)
     }
 
     searchwords=searchwords.replace("empty","")
-
 
     currentnodewords=[]
 
@@ -1122,9 +1125,11 @@ def connectorUI(newNode) {
         // otherwise use individual words in current node text(s)
         words=searchwords.split(" ")
         words.each {
-            if (it!="null") {
+            if (it!="") {
                 cleanword=cleanupWord(it)
-                currentnodewords.add(cleanword)
+                if (!cleanword.equals("")) {
+                    currentnodewords.add(cleanword)
+                }
             }
         }
         currentnodewords=currentnodewords.unique()
@@ -1190,7 +1195,7 @@ def connectorUI(newNode) {
                 words=candidatetext.split(" ")
                 words.each {
                     cleanword=cleanupWord(it)
-                    if (cleanword!=null) {
+                    if (!cleanword.equals("")) {
                         candidatenodewords.add(cleanword)
                     }
                 }
@@ -1201,7 +1206,6 @@ def connectorUI(newNode) {
             // process each proper word in the selected nodes text
             currentnodewords.each {
 
-                // TODO convert word to lowercase and remove quotes
                 currentnodeword=it
 
                 if (currentnodeword != "") {
@@ -1224,7 +1228,7 @@ def connectorUI(newNode) {
                         if (found) {
 
                             // make sure we haven't already grabbed this candidate node
-                            if (nodeIDNotInCurrentTables(candidatenode.nodeID)) {
+//                            if (nodeIDNotInCurrentTables(candidatenode.nodeID)) {
 
                                 // get parents node text
 
@@ -1243,7 +1247,7 @@ def connectorUI(newNode) {
                                                                       details: candidatenode.detailsText,
                                                                       properword: currentnodeword.toString().toUpperCase(),
                                                                       parent: parentnodetext])
-                            }
+//                            }
                         }
                     }
                 }
@@ -1508,13 +1512,16 @@ class ConnectorCandidateTableCellRenderer extends JLabel implements TableCellRen
             setForeground(Color.RED)
         }
 
+        // Get the current model row from the table (this works even when the table columns are sorted)
+        def modelRow = table.convertRowIndexToModel(rowIndex)
+
         // Set up tooltip for cell which shows the note and detail texts related to the node the cell refers to
-        def searchword=table.model.getValueAt(rowIndex,0)
+        def searchword=table.model.getValueAt(modelRow,0)
         String nodetype=removeHtmlTags(value.toString())+"<HR>Connected via word -> "+searchword+'<HR>'
-        String notetext=table.model.getValueAt(rowIndex,3)
+        String notetext=table.model.getValueAt(modelRow,3)
         if (notetext==null) notetext="empty"
-        String detailstext=table.model.getValueAt(rowIndex,4)
-        String parentnodetext=table.model.getValueAt(rowIndex,5)
+        String detailstext=table.model.getValueAt(modelRow,4)
+        String parentnodetext=table.model.getValueAt(modelRow,5)
         if (detailstext==null) detailstext="empty"
 
         // format tooltip text for display
@@ -1652,7 +1659,7 @@ def connectorManagerUI() {
     connectors_data = []
 
     // search through all nodes for connectors out
-    node.findAll().each {
+    node.map.root.findAll().each {
         def theNodeID = it.nodeID
 
         // retrieve each connector OUT from the node
@@ -1820,10 +1827,14 @@ def connectorManagerUI() {
                                         button(action: action(name: 'Remove ALL Connectors', defaultButton: true,
                                                 closure: {
                                                     removeAllConnectors()
+                                                    connectorsDisplayed = false
+                                                    connectorsframe.dispose()
                                                 }))
                                         button(action: action(name: 'Undo "Remove ALL Connectors"', defaultButton: true,
                                                 closure: {
                                                     c.undo()
+                                                    connectorsDisplayed = false
+                                                    connectorsframe.dispose()
                                                 }))
                                     }
                                 }
