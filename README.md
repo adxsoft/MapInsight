@@ -67,7 +67,7 @@ words
 (d) and/or words entered by the user (separated by commas) or you can
     specify a search phrase which is any string inside double quotes
 
-(e) or a regular expression which is any string inside forward slashes 
+(e) and/or a regular expression which is any string inside forward slashes 
     eg /M.*h/ would find the text March, Macbeth. Moth
     
 For example if the selected node had the word 'London'
