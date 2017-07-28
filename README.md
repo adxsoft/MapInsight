@@ -2,6 +2,7 @@
 
 ## Version History
 v1.0 First Version
+See video tutorial for MapInsight v1.0 at https://www.youtube.com/watch?v=cSyhkcsB2-M
 
 v1.1 Added following new features thanks to forum members feedback
 1. 'Refresh current view' in the Actions menu. Updates the current node details which is handy when underlying map has changed
