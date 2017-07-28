@@ -2,6 +2,15 @@
 
 ## Version History
 v1.0 First Version
+v1.1 Added following new features thanks to forum members feedback
+1. 'Refresh current view' in the Actions menu. Updates the current node details which is handy when underlying map has changed
+2. New button 'Save As Map' on 'Possible Connections' window will save the source node and all suggested nodes together 
+   with the connectors into a new map
+3. Connector Candidates Options windows now caters for regular expressions
+4. View, Connectors has new menu item 'Show Current Node Connectors' which will display only the connectors for the 
+   current node and hide all other connectors. 'Unhide All Connectors' will restore view of all connectors 
+5. View, Connectors has new menu item 'Show Connectors for a label' which will display only the connectors with a
+   specific middle label and hide all other connectors. 'Unhide All Connectors' will restore view of all connectors 
 
 ## Installation
 1. Open the User Directory in Freeplane (Tools/Open User directory)
@@ -22,7 +31,7 @@ I do use connectors widely and found that a map can get very confusing when ther
 This simple UI gives the view from a selected node showings its parent, children, connectors in and out. 
 Hovering over a node in the UI reveals the notes and details. 
 
-Connection Canidates tool finds possible connections through link words or phrases and allows you to create the connector
+Connection Candidates tool finds possible connections through link words, phrases or regular expressions and allows you to create the connector
 
 Connection Manager shows all connectors in the map in a sortable table with edit/delete options
 
@@ -52,7 +61,9 @@ words
 (c) optionally from the node's detail text
 (d) and/or words entered by the user (separated by commas) or you can
     specify a search phrase which is any string inside double quotes
-
+(e) or a regular expression which is any string inside forward slashes 
+    eg /M.*h/ would find the text March, Macbeth. Moth
+    
 For example if the selected node had the word 'London'
 then any other nodes in map with the word 'London' in them would show as a possible connections.
 
@@ -90,5 +101,19 @@ Clicking on a connector will highlight the connector in BLUE in the list and BLU
 You can remove the connector by clicking the 'Remove Connector' button
 
 You can change the connectors middle label by clicking the 'Edit Label'
+
+## 4. VIEWING CONNECTORS
+
+The sub menu in the View menu lets you view specific connectors
+
+'Show Current Node Connectors' will display only connectors to and from the current node in the map. All other
+connectors will be hidden
+
+'Show Connectors for a label' will display only connectors with a specific label in the map. All other
+connectors will be hidden
+
+'Hide all Connectors' will hide all connectors in the map (useful in crowded maps)
+
+'Unhide all Connectors' will show all connectors in the map
 
 End of Document
