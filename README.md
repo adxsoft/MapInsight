@@ -3,6 +3,7 @@
 ## Version History
 v1.0 First Version
 
+v1.0 First Version
 v1.1 Added following new features thanks to forum members feedback
 1. 'Refresh current view' in the Actions menu. Updates the current node details which is handy when underlying map has changed
 2. New button 'Save As Map' on 'Possible Connections' window will save the source node and all suggested nodes together 
@@ -11,7 +12,9 @@ v1.1 Added following new features thanks to forum members feedback
 4. View, Connectors has new menu item 'Show Current Node Connectors' which will display only the connectors for the 
    current node and hide all other connectors. 'Unhide All Connectors' will restore view of all connectors 
 5. View, Connectors has new menu item 'Show Connectors for a label' which will display only the connectors with a
-   specific middle label and hide all other connectors. 'Unhide All Connectors' will restore view of all connectors 
+   middle label that contains the label text and hide all other connectors. 'Unhide All Connectors' will restore view of all connectors 
+6. Allows multiline labels when adding connectors
+7. Bug fixes (as per https://sourceforge.net/p/freeplane/discussion/758437/thread/a49efba6/)
 
 ## Installation
 1. Open the User Directory in Freeplane (Tools/Open User directory)
