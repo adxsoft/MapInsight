@@ -101,7 +101,9 @@ v1.1 Added following new features thanks to forum members feedback
 4. View, Connectors has new menu item 'Show Current Node Connectors' which will display only the connectors for the 
    current node and hide all other connectors. 'Unhide All Connectors' will restore view of all connectors 
 5. View, Connectors has new menu item 'Show Connectors for a label' which will display only the connectors with a
-   specific middle label and hide all other connectors. 'Unhide All Connectors' will restore view of all connectors 
+   middle label that contains the label text and hide all other connectors. 'Unhide All Connectors' will restore view of all connectors 
+6. Allows multiline labels when adding connectors
+7. Bug fixes (as per https://sourceforge.net/p/freeplane/discussion/758437/thread/a49efba6/)
 """
 
 installation="""
@@ -160,7 +162,7 @@ Object.metaClass.removeHtmlTags = {-> setAllConnectorsToDefaultColor()}
 Object.metaClass.showConnectorsForCurrentNode = {-> showConnectorsForCurrentNode()}
 Object.metaClass.hideAllConnectors = {-> hideAllConnectors()}
 Object.metaClass.unhideAllConnectors = {-> unhideAllConnectors()}
-Object.metaClass.formatNodeTextForCell = {->formatNodeTextForCell(nodetext)}
+Object.metaClass.formatNodeTextForCell = {nodetext ->formatNodeTextForCell(nodetext)}
 Object.metaClass.removeAllConnectors = {->removeAllConnectors()}
 
 //-----------------------
@@ -437,17 +439,38 @@ def showConnectorsForCurrentNode() {
 //-----------------------
 // == GLOBAL FUNCTION: == set all connectors in the current node and subnodes to default color (GRAY)
 def showAllConnectorsWithLabel(label) {
+    def searchtype="contains"
+    def searcharg=label
+    if (label.startsWith('/') && label.endsWith('/')) {
+        searchtype="regex"
+        searcharg=label.substring(1,label.length()-1)
+    }
+
     // set all connectors to GRAY
     hideAllConnectors()
     node.map.root.findAll().each {
         it.connectorsIn.each {
-            if (it.middleLabel.equals(label)) {
-                it.setColor(Color.GRAY)
+            if (searchtype=="contains") {
+                if (it.middleLabel.toLowerCase().contains(searcharg.toLowerCase())) {
+                    it.setColor(Color.RED)
+                }
+            }
+            if (searchtype=="regex") {
+                if (it.middleLabel=~searcharg) {
+                    it.setColor(Color.BLUE)
+                }
             }
         }
         it.connectorsOut.each {
-            if (it.middleLabel.equals(label)) {
-                it.setColor(Color.GRAY)
+            if (searchtype=="contains") {
+                if (it.middleLabel.toLowerCase().contains(searcharg.toLowerCase())) {
+                    it.setColor(Color.RED)
+                }
+            }
+            if (searchtype=="regex") {
+                if (it.middleLabel=~searcharg) {
+                    it.setColor(Color.BLUE)
+                }
             }
         }
     }
@@ -465,9 +488,14 @@ def loadNodeData(node) {
 
     // get parent node details
     def nodeparenttext = 'root'
+    def nodeparentnotetext = ''
+    def nodeparentdetailstext = ''
     def nodeparentID = null
+
     if (node.parent != null) {
         nodeparenttext = node.parent.text
+        nodeparentnotetext = node.parent.noteText
+        nodeparentdetailstext = node.parent.detailsText
         nodeparentID = node.parent.nodeID
     }
 
@@ -475,7 +503,7 @@ def loadNodeData(node) {
     nodes_data = []
 
     // add parent node info of selected node to working array
-    nodes_data.add([id: nodeparentID, type: 'parent', nodetext: nodeparenttext, label: 'parent', notetext: node.noteText, details: node.detailsText])
+    nodes_data.add([id: nodeparentID, type: 'parent', nodetext: nodeparenttext, label: 'parent', notetext: nodeparentnotetext, details: nodeparentdetailstext])
 
     // add child node(s) info of selected node to working array
     if (node.children) {
@@ -492,7 +520,7 @@ def loadNodeData(node) {
                 if (it.middleLabel != null) {
                     middleLabel = it.middleLabel
                 }
-                sourceNode = getNodeByID(it.delegate.targetID)
+                sourceNode = getNodeByID(it.delegate.source.id)
                 nodes_data.add([id: it.source.nodeID, type: 'conn-IN', nodetext: it.source.text, label: middleLabel, notetext: sourceNode.noteText, details: sourceNode.detailsText])
             }
         }
@@ -631,7 +659,7 @@ class MainTableCellRenderer extends JLabel implements TableCellRenderer {
         if (detailstext==null) detailstext="empty"
 
         // format the tooltip for display
-        def tooltiptext=formatForSwingDisplay(nodetype,value,notetext,detailstext)
+        def tooltiptext= "<html><br>" + formatForSwingDisplay(nodetype,value,notetext,detailstext)
 
         // attach tooltip to the cell
         setToolTipText((String) tooltiptext)
@@ -860,7 +888,7 @@ frame = swing.frame(title: "$scriptVersion", defaultCloseOperation: JFrame.DISPO
                                 action(name: "Show Connectors for a label",
                                         closure: {
                                             def pane = swing.optionPane()
-                                            def label = pane.showInputDialog(null,"Label?","Title",JOptionPane.QUESTION_MESSAGE)
+                                            def label = pane.showInputDialog(null,"Enter full or partial label text\n OR a regular expression eg /M.*h/","Connector Label Search",JOptionPane.QUESTION_MESSAGE)
                                             showAllConnectorsWithLabel(label)
                                         })
                             }
@@ -990,7 +1018,6 @@ frame = swing.frame(title: "$scriptVersion", defaultCloseOperation: JFrame.DISPO
                     }
                 }
             }
-
 
             // main central container has five areas arranged vertically
             // that show the relationships of the selected node
@@ -1620,19 +1647,24 @@ def connectorUI(newNode) {
                                 boxLayout(axis: BoxLayout.Y_AXIS)
                                 vbox {
                                     panel() {
-                                        gridLayout(columns: 1, rows: 8)
-                                        label(text: 'Create connector from',horizontalAlignment: JLabel.CENTER)
-                                        label(text: "$sourcenode.text",horizontalAlignment: JLabel.CENTER,foreground: Color.BLUE)
-                                        label(text: "to",horizontalAlignment: JLabel.CENTER)
-                                        label(text: "$targetnode.text",horizontalAlignment: JLabel.CENTER,foreground: Color.BLUE)
-                                        separator()
-                                        label(text: "Enter new connector middle label ",horizontalAlignment: JLabel.CENTER)
-                                        def input = textField(columns: 20, text: targetnodedata['properword'].toLowerCase())
-                                        input.addFocusListener(
-                                                [focusGained: {},
-                                                 focusLost: {
-                                                     middlelabel=input.text
-                                                 }] as FocusListener)
+                                        flowLayout()
+                                        vbox {
+                                            //                                        gridLayout(columns: 1, rows: 8)
+                                            label(text: 'Create connector from', horizontalAlignment: JLabel.CENTER)
+                                            label(text: "$sourcenode.text", horizontalAlignment: JLabel.CENTER, foreground: Color.BLUE)
+                                            label(text: "to", horizontalAlignment: JLabel.CENTER)
+                                            label(text: "$targetnode.text", horizontalAlignment: JLabel.CENTER, foreground: Color.BLUE)
+                                            separator()
+                                            label(text: "Enter new connector middle label ", horizontalAlignment: JLabel.CENTER)
+                                            scrollPane() {
+                                                def input = textArea(columns: 20, rows: 3, text: targetnodedata['properword'].toLowerCase())
+                                                input.addFocusListener(
+                                                        [focusGained: {},
+                                                         focusLost  : {
+                                                             middlelabel = input.text
+                                                         }] as FocusListener)
+                                            }
+                                        }
                                     }
                                     hbox {
                                         button(action: action(name: 'Add Connector', closure: {
