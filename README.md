@@ -2,6 +2,7 @@
 
 ## Version History
 v1.0 First Version
+
 v1.1 Added following new features thanks to forum members feedback
 1. 'Refresh current view' in the Actions menu. Updates the current node details which is handy when underlying map has changed
 2. New button 'Save As Map' on 'Possible Connections' window will save the source node and all suggested nodes together 
