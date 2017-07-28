@@ -57,11 +57,16 @@ To see recent nodes visited see the History menu item
 
 The script shows a sortable list of any possible related nodes (candidate nodes) by using 'proper'
 words
+
 (a) from the selected node's core text
+
 (b) optionally from the node's note text
+
 (c) optionally from the node's detail text
+
 (d) and/or words entered by the user (separated by commas) or you can
     specify a search phrase which is any string inside double quotes
+
 (e) or a regular expression which is any string inside forward slashes 
     eg /M.*h/ would find the text March, Macbeth. Moth
     
