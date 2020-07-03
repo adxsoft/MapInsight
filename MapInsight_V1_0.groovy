@@ -253,7 +253,7 @@ def formatForSwingDisplay(nodetype,text,note,details) {
             .replace('</BODY>','')
             .replace('<body>','')
             .replace('&#160;','&nbsp;')
-    note=wordwrap(note,,wrapafterchars,wrapcharacter).trim()
+    note=wordwrap(note,wrapafterchars,wrapcharacter).trim()
     msgtext+="<B><font color=\"blue\">Note:</font></B><HR>$note<BR><BR>"
     if (details==null) details='empty'
     details=details

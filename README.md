@@ -16,6 +16,10 @@ v1.1 Added following new features thanks to forum members feedback
 6. Allows multiline labels when adding connectors
 7. Bug fixes (as per https://sourceforge.net/p/freeplane/discussion/758437/thread/a49efba6/)
 
+v1.2 Bug fix -- picked up by claudio Jul 3rd 2020.
+		note=wordwrap(note,,wrapafterchars,wrapcharacter).trim() should be
+		note=wordwrap(note,wrapafterchars,wrapcharacter).trim()
+
 ## Installation
 1. Open the User Directory in Freeplane (Tools/Open User directory)
 2. Open the scripts folder
